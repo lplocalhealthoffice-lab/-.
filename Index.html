@@ -1,116 +1,235 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f4f6f9;
-      margin: 0;
-      padding: 32px 16px;
-      color: #1f2937;
-    }
-
-    .card {
-      max-width: 480px;
-      margin: 0 auto;
-      background: white;
-      padding: 28px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px #00000012;
-      text-align: center;
-    }
-
-    #number {
-      font-size: 32px;
-      font-weight: bold;
-      color: #1565c0;
-      margin: 24px 0;
-    }
-
-    .button {
-      display: inline-block;
-      padding: 14px 24px;
-      border-radius: 8px;
-      background: #1565c0;
-      color: white;
-      text-decoration: none;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
-    .note {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.7;
-    }
-
-    #message {
-      white-space: pre-wrap;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแสดงผลงานวิชาการ - ชมรม รพ.สต.อบจ.ลำปาง</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js สำหรับ Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Thai -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
 </head>
-<body>
-  <div class="card">
-    <h2>รับเลขที่ใบสมัคร</h2>
+<body class="bg-gray-50 text-gray-800">
 
-    <p id="message">กำลังจองเลขที่ใบสมัคร กรุณารอสักครู่...</p>
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-10 bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-600 relative">
+            <span class="inline-block bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full mb-3">ชมรม รพ.สต.อบจ.ลำปาง</span>
+            <h1 class="text-3xl font-bold text-gray-800">คลังผลงานวิชาการ ตำแหน่งชำนาญการพิเศษ</h1>
+            <p class="text-gray-600 mt-2">ระบบค้นหาและแสดงผลงานทางวิชาการ พร้อมแดชบอร์ดสรุปผลงาน</p>
+            
+            <!-- ปุ่มกรอกแบบฟอร์ม Google Form -->
+            <div class="mt-4">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfAqjNIzgHwqLdt6g6VyA7JFmJk8CdCt_jSBiszpAmzZulRYw/viewform" target="_blank" 
+                   class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    กรอกแบบฟอร์มส่งผลงาน
+                </a>
+            </div>
+        </header>
 
-    <div id="number"></div>
+        <!-- Dashboard Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700">สถิติผลงานแยกตามประเภท</h3>
+                <div class="w-full h-64 flex justify-center">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md flex flex-col justify-center items-center">
+                <h3 class="text-lg font-semibold mb-2 text-gray-700">สรุปภาพรวม</h3>
+                <div class="text-center my-auto">
+                    <p class="text-gray-500">จำนวนผลงานทั้งหมดในระบบ</p>
+                    <span id="totalWorks" class="text-5xl font-bold text-blue-600">0</span>
+                    <p class="text-gray-500 mt-1">รายการ</p>
+                </div>
+            </div>
+        </div>
 
-    <a id="openForm" class="button" hidden>
-      เปิดแบบฟอร์ม
-    </a>
+        <!-- Search & Export Section -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="w-full md:w-2/3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหารายชื่อเจ้าของผลงาน หรือชื่อผลงาน (พิมพ์บางส่วนได้)</label>
+                    <input type="text" id="searchInput" placeholder="เช่น สมชาย หรือ นวัตกรรม..." 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="w-full md:w-1/3 flex items-end">
+                    <button onclick="exportToExcel()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        ส่งออกข้อมูลเป็น Excel (.csv)
+                    </button>
+                </div>
+            </div>
+        </div>
 
-    <p class="note">
-      ระบบจะใส่เลขที่ใบสมัครและรหัสจองให้ในแบบฟอร์ม
-      กรุณาอย่าแก้ไขข้อมูลสองช่องนี้
-    </p>
+        <!-- Result Table Section -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-blue-600 text-white">
+                        <tr>
+                            <th class="py-3 px-4">ลำดับ</th>
+                            <th class="py-3 px-4">ชื่อ - นามสกุล</th>
+                            <th class="py-3 px-4">ชื่อผลงานวิชาการ</th>
+                            <th class="py-3 px-4">ประเภทผลงาน</th>
+                            <th class="py-3 px-4 text-center">ไฟล์ผลงาน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="5" class="text-center py-6 text-gray-500">กำลังโหลดข้อมูล...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-    <p class="note">
-      การจองเลขยังไม่ถือว่าสมัครสำเร็จ
-      กรุณากรอกข้อมูลและกดส่งใน Google Form
-      และอย่าแชร์ลิงก์ฟอร์มที่มีเลขจองของคุณให้ผู้อื่น
-    </p>
-  </div>
+    <!-- Script สำหรับจัดการข้อมูล -->
+    <script>
+        // ลิงก์ CSV จาก Google Sheets ของคุณ
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1XB6lngN7UlCZRBen1Rjm_aopkuZ0oOj5HdeWQS9U60o/export?format=csv&resourcekey=&gid=249642042';
 
-  <script>
-    // เก็บรหัสจองเฉพาะเซสชันของแท็บนี้
-    const storageKey = 'application_reservation_token_v1';
-    let previousToken = '';
+        let allData = [];
+        let currentFilteredData = [];
+        let chartInstance = null;
 
-    try {
-      previousToken = sessionStorage.getItem(storageKey) || '';
-    } catch (error) {
-      // หากเบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูล
-      // ระบบยังจองเลขได้ แต่รีเฟรชแล้วอาจได้เลขใหม่
-    }
+        async function fetchSheetData() {
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const dataText = await response.text();
+                
+                parseCSV(dataText);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="text-center py-6 text-red-500">ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบการแชร์ไฟล์ Google Sheets</td></tr>`;
+            }
+        }
 
-    google.script.run
-      .withSuccessHandler(function (result) {
-        try {
-          sessionStorage.setItem(storageKey, result.token);
-        } catch (error) {}
+        function parseCSV(text) {
+            const rows = text.split('\n').map(row => {
+                return row.split(',').map(val => val.replace(/^"|"$/g, '').trim());
+            });
 
-        document.getElementById('message').textContent =
-          'เลขที่ใบสมัครของคุณคือ';
+            // กรองเอาเฉพาะแถวที่มีข้อมูลครบถ้วน
+            allData = rows.slice(1).filter(row => row.length >= 4 && row[1]);
+            currentFilteredData = allData;
+            
+            displayData(allData);
+            updateDashboard(allData);
+        }
 
-        document.getElementById('number').textContent =
-          result.number;
+        function displayData(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
 
-        const link = document.getElementById('openForm');
-        link.href = result.url;
-        link.hidden = false;
-      })
-      .withFailureHandler(function (error) {
-        document.getElementById('message').textContent =
-          'ไม่สามารถจองเลขได้: ' +
-          (error.message || 'กรุณาลองใหม่หรือติดต่อผู้ดูแล');
-      })
-      .reserveNumber(previousToken);
-  </script>
+            document.getElementById('totalWorks').innerText = data.length;
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>`;
+                return;
+            }
+
+            data.forEach((row, index) => {
+                const name = row[1] || '-';
+                const title = row[2] || '-';
+                const category = row[3] || '-';
+                const fileLink = row[4] || '#';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition';
+                tr.innerHTML = `
+                    <th class="py-3 px-4">${index + 1}</th>
+                    <td class="py-3 px-4 font-medium">${name}</td>
+                    <td class="py-3 px-4">${title}</td>
+                    <td class="py-3 px-4"><span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">${category}</span></td>
+                    <td class="py-3 px-4 text-center">
+                        ${fileLink !== '#' && fileLink.startsWith('http') ? `<a href="${fileLink}" target="_blank" class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition">เปิดไฟล์</a>` : '<span class="text-gray-400">ไม่มีไฟล์</span>'}
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function filterData() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            currentFilteredData = allData.filter(row => {
+                const name = (row[1] || '').toLowerCase();
+                const title = (row[2] || '').toLowerCase();
+                return name.includes(keyword) || title.includes(keyword);
+            });
+            displayData(currentFilteredData);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', filterData);
+
+        function exportToExcel() {
+            if (currentFilteredData.length === 0) {
+                alert('ไม่มีข้อมูลสำหรับส่งออก');
+                return;
+            }
+
+            let csvContent = "\uFEFF"; 
+            csvContent += "ลำดับ,ชื่อ-นามสกุล,ชื่อผลงานวิชาการ,ประเภทผลงาน,ลิงก์ไฟล์ผลงาน\n";
+
+            currentFilteredData.forEach((row, index) => {
+                const name = `"${(row[1] || '').replace(/"/g, '""')}"`;
+                const title = `"${(row[2] || '').replace(/"/g, '""')}"`;
+                const category = `"${(row[3] || '').replace(/"/g, '""')}"`;
+                const fileLink = `"${(row[4] || '').replace(/"/g, '""')}"`;
+
+                csvContent += `${index + 1},${name},${title},${category},${fileLink}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'academic_works_lampang.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function updateDashboard(data) {
+            const categoryCounts = {};
+            data.forEach(row => {
+                const cat = row[3] || 'ไม่ระบุประเภท';
+                categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            });
+
+            const labels = Object.keys(categoryCounts);
+            const counts = Object.values(categoryCounts);
+
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        fetchSheetData();
+    </script>
 </body>
 </html>
