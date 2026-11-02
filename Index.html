@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+    }
+
+    .card {
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px #00000012;
+      text-align: center;
+    }
+
+    #number {
+      font-size: 32px;
+      font-weight: bold;
+      color: #1565c0;
+      margin: 24px 0;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 14px 24px;
+      border-radius: 8px;
+      background: #1565c0;
+      color: white;
+      text-decoration: none;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .note {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    #message {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>รับเลขที่ใบสมัคร</h2>
+
+    <p id="message">กำลังจองเลขที่ใบสมัคร กรุณารอสักครู่...</p>
+
+    <div id="number"></div>
+
+    <a id="openForm" class="button" hidden>
+      เปิดแบบฟอร์ม
+    </a>
+
+    <p class="note">
+      ระบบจะใส่เลขที่ใบสมัครและรหัสจองให้ในแบบฟอร์ม
+      กรุณาอย่าแก้ไขข้อมูลสองช่องนี้
+    </p>
+
+    <p class="note">
+      การจองเลขยังไม่ถือว่าสมัครสำเร็จ
+      กรุณากรอกข้อมูลและกดส่งใน Google Form
+      และอย่าแชร์ลิงก์ฟอร์มที่มีเลขจองของคุณให้ผู้อื่น
+    </p>
+  </div>
+
+  <script>
+    // เก็บรหัสจองเฉพาะเซสชันของแท็บนี้
+    const storageKey = 'application_reservation_token_v1';
+    let previousToken = '';
+
+    try {
+      previousToken = sessionStorage.getItem(storageKey) || '';
+    } catch (error) {
+      // หากเบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูล
+      // ระบบยังจองเลขได้ แต่รีเฟรชแล้วอาจได้เลขใหม่
+    }
+
+    google.script.run
+      .withSuccessHandler(function (result) {
+        try {
+          sessionStorage.setItem(storageKey, result.token);
+        } catch (error) {}
+
+        document.getElementById('message').textContent =
+          'เลขที่ใบสมัครของคุณคือ';
+
+        document.getElementById('number').textContent =
+          result.number;
+
+        const link = document.getElementById('openForm');
+        link.href = result.url;
+        link.hidden = false;
+      })
+      .withFailureHandler(function (error) {
+        document.getElementById('message').textContent =
+          'ไม่สามารถจองเลขได้: ' +
+          (error.message || 'กรุณาลองใหม่หรือติดต่อผู้ดูแล');
+      })
+      .reserveNumber(previousToken);
+  </script>
+</body>
+</html>
